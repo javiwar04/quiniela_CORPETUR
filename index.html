@@ -210,6 +210,25 @@
   .qn-vmeta{font-size:12px;color:var(--chalk-dim);margin-bottom:16px}
   .qn-spin{text-align:center;color:var(--chalk-dim);padding:30px 0;font-size:13px;letter-spacing:.1em;text-transform:uppercase}
   .qn-credit{text-align:center;font-size:11px;color:var(--chalk-dim);padding:18px 0 6px}
+
+  /* ---------- leaderboard ---------- */
+  .qn-lrow{
+    display:flex;align-items:center;gap:12px;
+    background:rgba(0,0,0,.28);border:1px solid rgba(242,239,230,.18);
+    border-radius:13px;padding:12px 14px;margin-bottom:10px;
+  }
+  .qn-lrow.top1{border-color:var(--gold);background:rgba(217,164,65,.1)}
+  .qn-lrank{width:34px;text-align:center;font:900 16px var(--mono);color:var(--chalk-dim);flex:none}
+  .qn-linfo{flex:1;min-width:0}
+  .qn-lname{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qn-lsub{font-size:11px;color:var(--chalk-dim);font-weight:600;margin-top:2px}
+  .qn-lpts{font:900 22px var(--mono);color:var(--gold-soft);flex:none;text-align:right}
+  .qn-lpts small{font:600 9px var(--sans);display:block;color:var(--chalk-dim);letter-spacing:.15em;text-transform:uppercase}
+
+  /* hit coloring in read-only quiniela view */
+  .qn-cell.hit5{border-color:var(--ok);color:#9FE7C0}
+  .qn-cell.hit3{border-color:var(--gold);color:var(--gold-soft)}
+  .qn-cell.hit0{border-color:rgba(226,87,76,.5);color:#E8A39C}
 </style>
 </head>
 <body>
@@ -224,6 +243,7 @@
   <div class="qn-tabs" role="tablist">
     <button class="qn-tab" id="tabPredict" role="tab" aria-selected="true">⚽ Mi quiniela</button>
     <button class="qn-tab" id="tabPeople" role="tab" aria-selected="false">👥 Participantes</button>
+    <button class="qn-tab" id="tabTable" role="tab" aria-selected="false">🏆 Tabla</button>
   </div>
 
   <!-- ============ PREDICT VIEW ============ -->
@@ -245,6 +265,9 @@
     <div id="peopleList"></div>
     <div id="peopleDetail" style="display:none"></div>
   </div>
+
+  <!-- ============ LEADERBOARD VIEW ============ -->
+  <div class="qn-body" id="viewTable" style="display:none"></div>
 </div>
 
 <!-- sticky footer -->
@@ -332,6 +355,9 @@ Object.keys(GROUPS).forEach(g=>{
 });
 const TOTAL = MATCHES.length; // 72
 
+// Partidos que NO cuentan para la tabla (jugados antes del cierre de quinielas)
+const EXCLUDED = ["gA_1","gA_2"]; // México–Sudáfrica y Corea del Sur–Chequia (11 jun)
+
 /* ---------------- helpers ---------------- */
 const $ = s => document.querySelector(s);
 const slug = name => name.trim().toLowerCase()
@@ -345,8 +371,43 @@ function banner(type, html){
   b.scrollIntoView({behavior:"smooth", block:"nearest"});
 }
 
+/* ---------------- resultados reales + puntaje ---------------- */
+let results = {}; // matchId -> [h, a]
+
+function parseRes(v){
+  if(Array.isArray(v) && v.length === 2) return [Number(v[0]), Number(v[1])];
+  if(typeof v === "string"){
+    const m = v.trim().match(/^(\d+)\s*[-–:]\s*(\d+)$/);
+    if(m) return [parseInt(m[1],10), parseInt(m[2],10)];
+  }
+  return null;
+}
+
+// 5 pts marcador exacto · 3 pts ganador/empate acertado · 0 pts nada
+function scoreMatch(pick, res){
+  if(!pick || pick[0] === null || pick[0] === undefined ||
+     pick[1] === null || pick[1] === undefined || !res) return 0;
+  if(pick[0] === res[0] && pick[1] === res[1]) return 5;
+  if(Math.sign(pick[0]-pick[1]) === Math.sign(res[0]-res[1])) return 3;
+  return 0;
+}
+
+function startResultsListener(){
+  onSnapshot(doc(db, "resultados", "grupos"), snap=>{
+    results = {};
+    if(snap.exists()){
+      const data = snap.data();
+      Object.keys(data).forEach(k=>{
+        const r = parseRes(data[k]);
+        if(r) results[k] = r;
+      });
+    }
+    if($("#viewTable").style.display !== "none") renderTable();
+  }, ()=>{ /* sin resultados aún, no pasa nada */ });
+}
+
 /* ---------------- render groups ---------------- */
-function renderGroups(container, picks, readonly){
+function renderGroups(container, picks, readonly, resmap){
   container.innerHTML = "";
   Object.keys(GROUPS).forEach((g, gi)=>{
     const matches = MATCHES.filter(m=>m.group===g);
@@ -369,17 +430,35 @@ function renderGroups(container, picks, readonly){
       const p = picks && picks[m.id];
       const hv = p && p[0] !== null && p[0] !== undefined ? p[0] : "";
       const av = p && p[1] !== null && p[1] !== undefined ? p[1] : "";
+      let dateLine = m.date;
+      let hitCls = "";
+      const excluded = EXCLUDED.includes(m.id);
+      const res = readonly && resmap ? resmap[m.id] : null;
+      if(readonly){
+        if(res){
+          if(excluded){
+            dateLine = m.date + ' · Real: '+res[0]+'–'+res[1]+' · ⚪ No cuenta';
+          }else{
+            const s = scoreMatch(p, res);
+            const tag = s===5 ? '🎯 +5' : s===3 ? '✓ +3' : '✗ +0';
+            hitCls = s===5 ? ' hit5' : s===3 ? ' hit3' : ' hit0';
+            dateLine = m.date + ' · Real: '+res[0]+'–'+res[1]+' · '+tag;
+          }
+        }else if(excluded){
+          dateLine = m.date + ' · ⚪ No cuenta para la tabla';
+        }
+      }
       const row = document.createElement("div");
       row.className = "qn-match";
       row.innerHTML =
         '<div class="qn-team"><span class="qn-flag">'+hf+'</span><span class="qn-tname">'+hn+'</span></div>' +
         '<div class="qn-score">' +
-          '<input class="qn-cell'+(hv!==""?" filled":"")+'" data-mid="'+m.id+'" data-side="0" type="number" inputmode="numeric" min="0" max="20" value="'+hv+'"'+(readonly?' readonly tabindex="-1"':'')+'>' +
+          '<input class="qn-cell'+(hv!==""?" filled":"")+hitCls+'" data-mid="'+m.id+'" data-side="0" type="number" inputmode="numeric" min="0" max="20" value="'+hv+'"'+(readonly?' readonly tabindex="-1"':'')+'>' +
           '<span class="qn-dash">–</span>' +
-          '<input class="qn-cell'+(av!==""?" filled":"")+'" data-mid="'+m.id+'" data-side="1" type="number" inputmode="numeric" min="0" max="20" value="'+av+'"'+(readonly?' readonly tabindex="-1"':'')+'>' +
+          '<input class="qn-cell'+(av!==""?" filled":"")+hitCls+'" data-mid="'+m.id+'" data-side="1" type="number" inputmode="numeric" min="0" max="20" value="'+av+'"'+(readonly?' readonly tabindex="-1"':'')+'>' +
         '</div>' +
         '<div class="qn-team right"><span class="qn-tname">'+an+'</span><span class="qn-flag">'+af+'</span></div>' +
-        '<div class="qn-mdate">'+m.date+'</div>';
+        '<div class="qn-mdate">'+dateLine+'</div>';
       body.appendChild(row);
     });
 
@@ -500,6 +579,7 @@ function startListening(){
     if($("#viewPeople").style.display !== "none" && $("#peopleDetail").style.display === "none"){
       renderPeopleList();
     }
+    if($("#viewTable").style.display !== "none") renderTable();
   }, err=>{
     $("#peopleList").innerHTML =
       '<div class="qn-banner err show">No se pudieron cargar las quinielas ('+(err.code||"error")+'). Verificá la configuración de Firebase y las reglas de Firestore.</div>';
@@ -545,28 +625,83 @@ function showDetail(ent){
     '<p class="qn-vmeta">Sellada el '+d.toLocaleString("es-GT")+' · solo lectura</p>' +
     '<div id="detGroups"></div>';
   det.querySelector("#detName").textContent = ent.name;
-  renderGroups(det.querySelector("#detGroups"), ent.picks, true);
+  renderGroups(det.querySelector("#detGroups"), ent.picks, true, results);
   det.querySelectorAll(".qn-group").forEach(g=>g.classList.add("open"));
   det.querySelector("#backBtn").addEventListener("click", renderPeopleList);
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
+/* ---------------- tabla de posiciones ---------------- */
+function renderTable(){
+  const v = $("#viewTable");
+  const playedIds = Object.keys(results).filter(id=>!EXCLUDED.includes(id));
+
+  if(cachedEntries.length === 0){
+    v.innerHTML = '<div class="qn-empty"><span class="big">🥅</span>Todavía no hay quinielas selladas.</div>';
+    return;
+  }
+  if(playedIds.length === 0){
+    v.innerHTML = '<div class="qn-empty"><span class="big">⏳</span>Aún no hay resultados ingresados.<br>La tabla aparecerá cuando se registre el primer partido que cuenta.<br><br><span style="font-size:12px">⚪ Los 2 primeros partidos del torneo no cuentan para la tabla.</span></div>';
+    return;
+  }
+
+  const rows = cachedEntries.map(ent=>{
+    let pts = 0, exactos = 0, ganadores = 0;
+    playedIds.forEach(id=>{
+      const s = scoreMatch(ent.picks ? ent.picks[id] : null, results[id]);
+      pts += s;
+      if(s === 5) exactos++;
+      else if(s === 3) ganadores++;
+    });
+    return {name: ent.name, pts, exactos, ganadores};
+  });
+
+  rows.sort((a,b)=> b.pts - a.pts || b.exactos - a.exactos || a.name.localeCompare(b.name));
+
+  let html = '<div class="qn-banner gold show" style="margin-bottom:14px">📊 <strong>'+playedIds.length+'</strong> partido'+(playedIds.length===1?"":"s")+' contado'+(playedIds.length===1?"":"s")+' · 🎯 exacto = 5 pts · ✓ ganador/empate = 3 pts · ⚪ los 2 primeros partidos no cuentan. Se actualiza en tiempo real ⚡</div>';
+
+  const medals = ["🥇","🥈","🥉"];
+  let lastPts = null, lastRank = 0;
+  rows.forEach((r, i)=>{
+    const rank = (r.pts === lastPts) ? lastRank : i+1; // empates comparten posición
+    lastPts = r.pts; lastRank = rank;
+    const badge = rank <= 3 ? medals[rank-1] : rank+".";
+    html +=
+      '<div class="qn-lrow'+(rank===1?' top1':'')+'">' +
+        '<div class="qn-lrank">'+badge+'</div>' +
+        '<div class="qn-linfo">' +
+          '<div class="qn-lname"></div>' +
+          '<div class="qn-lsub">🎯 '+r.exactos+' exacto'+(r.exactos===1?"":"s")+' · ✓ '+r.ganadores+' ganador'+(r.ganadores===1?"":"es")+'</div>' +
+        '</div>' +
+        '<div class="qn-lpts">'+r.pts+'<small>pts</small></div>' +
+      '</div>';
+  });
+  v.innerHTML = html;
+  // nombres como texto plano (evita inyección de HTML vía nombres)
+  v.querySelectorAll(".qn-lname").forEach((el, i)=>{ el.textContent = rows[i].name; });
+}
+
 /* ---------------- tabs ---------------- */
 function switchTab(which){
-  const predict = which === "predict";
-  $("#tabPredict").setAttribute("aria-selected", predict);
-  $("#tabPeople").setAttribute("aria-selected", !predict);
-  $("#viewPredict").style.display = predict ? "block" : "none";
-  $("#viewPeople").style.display = predict ? "none" : "block";
-  $("#footBar").style.display = predict ? "flex" : "none";
-  if(!predict){ startListening(); renderPeopleList(); }
+  const tabs = {predict:"#tabPredict", people:"#tabPeople", table:"#tabTable"};
+  const views = {predict:"#viewPredict", people:"#viewPeople", table:"#viewTable"};
+  Object.keys(tabs).forEach(k=>{
+    $(tabs[k]).setAttribute("aria-selected", k === which);
+    $(views[k]).style.display = k === which ? "block" : "none";
+  });
+  $("#footBar").style.display = which === "predict" ? "flex" : "none";
+  if(which !== "predict") startListening();
+  if(which === "people") renderPeopleList();
+  if(which === "table") renderTable();
 }
 $("#tabPredict").addEventListener("click", ()=>switchTab("predict"));
 $("#tabPeople").addEventListener("click", ()=>switchTab("people"));
+$("#tabTable").addEventListener("click", ()=>switchTab("table"));
 
 /* ---------------- init ---------------- */
 renderGroups($("#groupsWrap"), null, false);
 refreshProgress();
+startResultsListener();
 </script>
 </body>
 </html>
