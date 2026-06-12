@@ -358,6 +358,43 @@ const TOTAL = MATCHES.length; // 72
 // Partidos que NO cuentan para la tabla (jugados antes del cierre de quinielas)
 const EXCLUDED = ["gA_1","gA_2"]; // México–Sudáfrica y Corea del Sur–Chequia (11 jun)
 
+// Hora de inicio (UTC) de cada partido. A cada participante solo le cuentan
+// los partidos que iniciaron DESPUÉS de sellar su quiniela.
+const KICKOFF = {
+  gA_1:"2026-06-11T19:00:00Z", gA_2:"2026-06-12T02:00:00Z", gA_3:"2026-06-18T16:00:00Z",
+  gA_4:"2026-06-19T01:00:00Z", gA_5:"2026-06-25T01:00:00Z", gA_6:"2026-06-25T01:00:00Z",
+  gB_1:"2026-06-12T19:00:00Z", gB_2:"2026-06-13T19:00:00Z", gB_3:"2026-06-18T19:00:00Z",
+  gB_4:"2026-06-18T22:00:00Z", gB_5:"2026-06-24T19:00:00Z", gB_6:"2026-06-24T19:00:00Z",
+  gC_1:"2026-06-13T22:00:00Z", gC_2:"2026-06-14T01:00:00Z", gC_3:"2026-06-19T22:00:00Z",
+  gC_4:"2026-06-20T00:30:00Z", gC_5:"2026-06-24T22:00:00Z", gC_6:"2026-06-24T22:00:00Z",
+  gD_1:"2026-06-13T01:00:00Z", gD_2:"2026-06-14T04:00:00Z", gD_3:"2026-06-19T19:00:00Z",
+  gD_4:"2026-06-20T03:00:00Z", gD_5:"2026-06-26T02:00:00Z", gD_6:"2026-06-26T02:00:00Z",
+  gE_1:"2026-06-14T17:00:00Z", gE_2:"2026-06-14T23:00:00Z", gE_3:"2026-06-20T20:00:00Z",
+  gE_4:"2026-06-21T00:00:00Z", gE_5:"2026-06-25T20:00:00Z", gE_6:"2026-06-25T20:00:00Z",
+  gF_1:"2026-06-14T20:00:00Z", gF_2:"2026-06-15T02:00:00Z", gF_3:"2026-06-20T17:00:00Z",
+  gF_4:"2026-06-21T04:00:00Z", gF_5:"2026-06-25T23:00:00Z", gF_6:"2026-06-25T23:00:00Z",
+  gG_1:"2026-06-15T19:00:00Z", gG_2:"2026-06-16T01:00:00Z", gG_3:"2026-06-21T19:00:00Z",
+  gG_4:"2026-06-22T01:00:00Z", gG_5:"2026-06-27T03:00:00Z", gG_6:"2026-06-27T03:00:00Z",
+  gH_1:"2026-06-15T16:00:00Z", gH_2:"2026-06-15T22:00:00Z", gH_3:"2026-06-21T16:00:00Z",
+  gH_4:"2026-06-21T22:00:00Z", gH_5:"2026-06-27T00:00:00Z", gH_6:"2026-06-27T00:00:00Z",
+  gI_1:"2026-06-16T19:00:00Z", gI_2:"2026-06-16T22:00:00Z", gI_3:"2026-06-22T21:00:00Z",
+  gI_4:"2026-06-23T00:00:00Z", gI_5:"2026-06-26T19:00:00Z", gI_6:"2026-06-26T19:00:00Z",
+  gJ_1:"2026-06-17T01:00:00Z", gJ_2:"2026-06-17T04:00:00Z", gJ_3:"2026-06-22T17:00:00Z",
+  gJ_4:"2026-06-23T03:00:00Z", gJ_5:"2026-06-28T02:00:00Z", gJ_6:"2026-06-28T02:00:00Z",
+  gK_1:"2026-06-17T17:00:00Z", gK_2:"2026-06-18T02:00:00Z", gK_3:"2026-06-23T17:00:00Z",
+  gK_4:"2026-06-24T02:00:00Z", gK_5:"2026-06-27T23:30:00Z", gK_6:"2026-06-27T23:30:00Z",
+  gL_1:"2026-06-17T20:00:00Z", gL_2:"2026-06-17T23:00:00Z", gL_3:"2026-06-23T20:00:00Z",
+  gL_4:"2026-06-23T23:00:00Z", gL_5:"2026-06-27T21:00:00Z", gL_6:"2026-06-27T21:00:00Z"
+};
+
+// ¿Este partido le cuenta a alguien que selló en sealMs?
+function countsFor(id, sealMs){
+  if(EXCLUDED.includes(id)) return false;
+  const ko = KICKOFF[id] ? Date.parse(KICKOFF[id]) : null;
+  if(ko === null || !sealMs) return false;
+  return sealMs < ko; // selló ANTES de que iniciara el partido
+}
+
 /* ---------------- helpers ---------------- */
 const $ = s => document.querySelector(s);
 const slug = name => name.trim().toLowerCase()
@@ -407,7 +444,7 @@ function startResultsListener(){
 }
 
 /* ---------------- render groups ---------------- */
-function renderGroups(container, picks, readonly, resmap){
+function renderGroups(container, picks, readonly, resmap, sealMs){
   container.innerHTML = "";
   Object.keys(GROUPS).forEach((g, gi)=>{
     const matches = MATCHES.filter(m=>m.group===g);
@@ -435,9 +472,12 @@ function renderGroups(container, picks, readonly, resmap){
       const excluded = EXCLUDED.includes(m.id);
       const res = readonly && resmap ? resmap[m.id] : null;
       if(readonly){
+        const lateSeal = sealMs && !excluded && KICKOFF[m.id] && sealMs >= Date.parse(KICKOFF[m.id]);
         if(res){
           if(excluded){
             dateLine = m.date + ' · Real: '+res[0]+'–'+res[1]+' · ⚪ No cuenta';
+          }else if(lateSeal){
+            dateLine = m.date + ' · Real: '+res[0]+'–'+res[1]+' · ⚪ Selló tarde, no cuenta';
           }else{
             const s = scoreMatch(p, res);
             const tag = s===5 ? '🎯 +5' : s===3 ? '✓ +3' : '✗ +0';
@@ -446,6 +486,8 @@ function renderGroups(container, picks, readonly, resmap){
           }
         }else if(excluded){
           dateLine = m.date + ' · ⚪ No cuenta para la tabla';
+        }else if(lateSeal){
+          dateLine = m.date + ' · ⚪ Selló tarde, no cuenta';
         }
       }
       const row = document.createElement("div");
@@ -625,7 +667,7 @@ function showDetail(ent){
     '<p class="qn-vmeta">Sellada el '+d.toLocaleString("es-GT")+' · solo lectura</p>' +
     '<div id="detGroups"></div>';
   det.querySelector("#detName").textContent = ent.name;
-  renderGroups(det.querySelector("#detGroups"), ent.picks, true, results);
+  renderGroups(det.querySelector("#detGroups"), ent.picks, true, results, d.getTime());
   det.querySelectorAll(".qn-group").forEach(g=>g.classList.add("open"));
   det.querySelector("#backBtn").addEventListener("click", renderPeopleList);
   window.scrollTo({top:0, behavior:"smooth"});
@@ -646,19 +688,22 @@ function renderTable(){
   }
 
   const rows = cachedEntries.map(ent=>{
-    let pts = 0, exactos = 0, ganadores = 0;
+    const sealMs = ent.ts && ent.ts.toDate ? ent.ts.toDate().getTime() : null;
+    let pts = 0, exactos = 0, ganadores = 0, contados = 0;
     playedIds.forEach(id=>{
+      if(!countsFor(id, sealMs)) return; // selló después de iniciado → no cuenta
+      contados++;
       const s = scoreMatch(ent.picks ? ent.picks[id] : null, results[id]);
       pts += s;
       if(s === 5) exactos++;
       else if(s === 3) ganadores++;
     });
-    return {name: ent.name, pts, exactos, ganadores};
+    return {name: ent.name, pts, exactos, ganadores, contados};
   });
 
   rows.sort((a,b)=> b.pts - a.pts || b.exactos - a.exactos || a.name.localeCompare(b.name));
 
-  let html = '<div class="qn-banner gold show" style="margin-bottom:14px">📊 <strong>'+playedIds.length+'</strong> partido'+(playedIds.length===1?"":"s")+' contado'+(playedIds.length===1?"":"s")+' · 🎯 exacto = 5 pts · ✓ ganador/empate = 3 pts · ⚪ los 2 primeros partidos no cuentan. Se actualiza en tiempo real ⚡</div>';
+  let html = '<div class="qn-banner gold show" style="margin-bottom:14px">📊 <strong>'+playedIds.length+'</strong> partido'+(playedIds.length===1?"":"s")+' con resultado · 🎯 exacto = 5 pts · ✓ ganador/empate = 3 pts. A cada quien solo le cuentan los partidos que iniciaron <strong>después</strong> de sellar su quiniela ⏱️ Se actualiza en tiempo real ⚡</div>';
 
   const medals = ["🥇","🥈","🥉"];
   let lastPts = null, lastRank = 0;
@@ -671,7 +716,7 @@ function renderTable(){
         '<div class="qn-lrank">'+badge+'</div>' +
         '<div class="qn-linfo">' +
           '<div class="qn-lname"></div>' +
-          '<div class="qn-lsub">🎯 '+r.exactos+' exacto'+(r.exactos===1?"":"s")+' · ✓ '+r.ganadores+' ganador'+(r.ganadores===1?"":"es")+'</div>' +
+          '<div class="qn-lsub">🎯 '+r.exactos+' exacto'+(r.exactos===1?"":"s")+' · ✓ '+r.ganadores+' ganador'+(r.ganadores===1?"":"es")+' · cuenta '+r.contados+' de '+playedIds.length+'</div>' +
         '</div>' +
         '<div class="qn-lpts">'+r.pts+'<small>pts</small></div>' +
       '</div>';
