@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiniela CORPETUR · Eliminatoria · Mundial 2026</title>
+<meta name="description" content="Quiniela CORPETUR — Fase de eliminación del Mundial 2026. Armá tu bracket y pronosticá los marcadores ronda por ronda.">
+<style>
+  :root{
+    --bg:#EEF3F9;
+    --surface:#FFFFFF;
+    --surface-2:#F6F9FD;
+    --ink:#16284F;
+    --ink-2:#33456A;
+    --ink-dim:#7186A6;
+    --line:#E0E8F3;
+    --line-2:#CFDBEC;
+    --green:#2E9E5B;
+    --green-d:#1C7A45;
+    --green-soft:#E7F6EE;
+    --gold:#D9A441;
+    --gold-d:#B07F23;
+    --gold-soft:#FBF3E1;
+    --red:#E2574C;
+    --red-soft:#FCEDEB;
+    --mono:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Menlo,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    --shadow:0 1px 2px rgba(22,40,79,.06), 0 8px 24px rgba(22,40,79,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;padding:14px 10px 48px;
+    -webkit-font-smoothing:antialiased}
+  .qn-app{background:var(--surface);border-radius:20px;overflow:hidden;max-width:680px;margin:0 auto;
+    box-shadow:var(--shadow);border:1px solid var(--line)}
+
+  /* ---------- header ---------- */
+  .qn-head{padding:24px 22px 20px;text-align:center;background:var(--surface);border-bottom:1px solid var(--line);position:relative}
+  .qn-head::after{content:"";position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);width:72px;height:4px;border-radius:4px;background:var(--green)}
+  .qn-eyebrow{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--green-d);font-weight:800}
+  .qn-title{font-size:clamp(25px,6.6vw,36px);font-weight:900;letter-spacing:-.025em;line-height:1.02;margin-top:7px;color:var(--ink)}
+  .qn-title em{font-style:normal;color:var(--gold-d)}
+  .qn-sub{font-size:13px;color:var(--ink-dim);margin-top:9px;font-weight:600}
+
+  /* ---------- tabs ---------- */
+  .qn-tabs{display:flex;gap:6px;padding:12px 14px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+  .qn-tab{flex:1;padding:11px 6px;background:transparent;border:none;border-radius:10px;cursor:pointer;
+    color:var(--ink-dim);font:800 12px/1.1 var(--sans);letter-spacing:.04em}
+  .qn-tab[aria-selected="true"]{color:#fff;background:var(--ink)}
+
+  .qn-body{padding:18px 16px 40px}
+
+  /* ---------- cards / inputs ---------- */
+  .qn-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .qn-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);font-weight:800;display:block;margin-bottom:8px}
+  .qn-input{width:100%;padding:13px 14px;border-radius:11px;border:1.5px solid var(--line-2);background:var(--surface);color:var(--ink);font:600 16px var(--sans)}
+  .qn-input:focus{outline:none;border-color:var(--green)}
+  .qn-hint{font-size:12.5px;color:var(--ink-dim);margin-top:8px;line-height:1.5}
+  .qn-hint strong{color:var(--ink-2)}
+  .qn-btn{padding:14px 18px;border:none;border-radius:12px;cursor:pointer;background:var(--green);color:#fff;
+    font:800 14px var(--sans);letter-spacing:.03em;box-shadow:0 6px 16px rgba(46,158,91,.28)}
+  .qn-btn:disabled{background:#C7D2E0;color:#fff;cursor:not-allowed;box-shadow:none}
+  .qn-btn.gold{background:var(--gold);box-shadow:0 6px 16px rgba(217,164,65,.3)}
+
+  /* step heading */
+  .qn-step{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .qn-stepnum{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;background:var(--ink);color:#fff;font:900 15px var(--mono)}
+  .qn-stepnum.g{background:var(--green)}
+  .qn-steptitle{font:900 17px var(--sans);letter-spacing:-.01em;color:var(--ink)}
+  .qn-pill{font:800 10px var(--sans);letter-spacing:.05em;padding:5px 10px;border-radius:20px;border:1px solid var(--line-2);color:var(--ink-dim);margin-left:auto;flex:none;white-space:nowrap}
+  .qn-pill.ok{border-color:var(--green);color:var(--green-d);background:var(--green-soft)}
+  .qn-pill.wait{border-color:var(--gold);color:var(--gold-d);background:var(--gold-soft)}
+
+  /* ---------- BRACKET (estrella) ---------- */
+  .bk-champ{display:flex;align-items:center;gap:12px;justify-content:center;padding:14px;margin-bottom:14px;border-radius:14px;
+    border:1.5px solid var(--gold);background:var(--gold-soft)}
+  .bk-champ .trophy{font-size:26px}
+  .bk-champ .lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-d);font-weight:800}
+  .bk-champ .who{font:900 19px var(--sans);color:var(--ink);display:flex;align-items:center;gap:8px;margin-top:1px}
+  .bk-champ .who .empty{color:var(--ink-dim);font-weight:700;font-size:15px}
+  .bk-champ .flag{font-size:22px}
+
+  .bk-scrollhint{font-size:11px;color:var(--ink-dim);text-align:center;margin-bottom:8px;font-weight:600}
+  .bk{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+  .bk-content{position:relative;display:flex;gap:26px;min-height:1140px;padding:4px 2px}
+  .bk-lines{position:absolute;top:0;left:0;pointer-events:none;z-index:0}
+  .bk-col{display:flex;flex-direction:column;min-width:150px;width:150px;flex:none;z-index:1}
+  .bk-collabel{font:800 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);text-align:center;padding-bottom:8px;height:26px}
+  .bk-ties{flex:1;display:flex;flex-direction:column}
+  .bk-tie{flex:1;display:flex;align-items:center;justify-content:center}
+
+  .bk-card{width:100%;background:var(--surface);border:1.5px solid var(--line-2);border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(22,40,79,.06)}
+  .bk-slot{display:flex;align-items:center;gap:8px;width:100%;padding:8px 9px;border:none;background:transparent;cursor:pointer;text-align:left;color:var(--ink);font:700 12.5px var(--sans);min-width:0}
+  .bk-slot .flag{font-size:16px;flex:none}
+  .bk-slot .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .bk-slot .chk{font-size:12px;color:var(--green);flex:none;opacity:0}
+  .bk-slot:hover:not(:disabled):not(.tbd){background:var(--surface-2)}
+  .bk-slot.sel{background:var(--green-soft);color:var(--green-d);font-weight:900}
+  .bk-slot.sel .chk{opacity:1}
+  .bk-slot.tbd{color:var(--ink-dim);font-style:italic;cursor:default;font-weight:600}
+  .bk-slot:disabled{cursor:default}
+  .bk-vs{display:flex;align-items:center;justify-content:center;padding:1px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .bk-vs span{font:900 8.5px var(--sans);letter-spacing:.12em;color:var(--ink-dim)}
+  /* aciertos en lectura */
+  .bk-slot.win{background:var(--green-soft);color:var(--green-d)}
+  .bk-slot.win .chk{opacity:1;color:var(--green)}
+  .bk-slot.miss{background:var(--red-soft);color:var(--red)}
+  .bk-slot.miss .chk{opacity:1;color:var(--red)}
+  .bk-slot.miss .chk::before{content:"✗"}
+  .bk-slot.sel .chk::before,.bk-slot.win .chk::before{content:"✓"}
+  /* champion card */
+  .bk-champcard{width:100%;border:1.5px solid var(--gold);background:var(--gold-soft);border-radius:12px;padding:12px 10px;text-align:center}
+  .bk-champcard .t{font-size:22px}
+  .bk-champcard .l{font:800 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--gold-d);margin-top:2px}
+  .bk-champcard .n{font:900 13px var(--sans);color:var(--ink);margin-top:2px;display:flex;align-items:center;gap:6px;justify-content:center}
+  .bk-champcard .n.empty{color:var(--ink-dim);font-weight:700;font-style:italic}
+
+  /* ---------- SCORE rows (estilo claro) ---------- */
+  .sc-match{border:1px solid var(--line);border-radius:13px;padding:12px 13px;margin-bottom:10px;background:var(--surface)}
+  .sc-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+  .sc-team{display:flex;align-items:center;gap:8px;min-width:0}
+  .sc-team.right{justify-content:flex-end;text-align:right}
+  .sc-flag{font-size:19px;flex:none}
+  .sc-name{font:700 13px var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+  .sc-score{display:flex;align-items:center;gap:6px}
+  .qn-cell{width:42px;height:42px;text-align:center;border-radius:9px;border:1.5px solid var(--line-2);background:var(--surface);color:var(--ink);font:800 18px var(--mono);-moz-appearance:textfield;appearance:textfield}
+  .qn-cell::-webkit-outer-spin-button,.qn-cell::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .qn-cell:focus{outline:none;border-color:var(--green)}
+  .qn-cell.filled{border-color:var(--green);color:var(--green-d)}
+  .qn-cell[readonly]{cursor:default;background:var(--surface-2)}
+  .qn-cell.hit5{border-color:var(--green);background:var(--green-soft);color:var(--green-d)}
+  .qn-cell.hit3{border-color:var(--gold);background:var(--gold-soft);color:var(--gold-d)}
+  .qn-cell.hit0{border-color:var(--red);background:var(--red-soft);color:var(--red)}
+  .sc-vs{font:900 9px var(--sans);letter-spacing:.1em;color:var(--ink-dim)}
+  .sc-foot{display:flex;align-items:center;gap:8px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);flex-wrap:wrap}
+  .sc-tag{font:800 10px var(--sans);letter-spacing:.04em;padding:3px 8px;border-radius:6px}
+  .sc-label{font:800 10px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--gold-d);background:var(--gold-soft);padding:3px 8px;border-radius:6px}
+  .sc-adv{font:700 12px var(--sans);color:var(--ink-2)}
+  .sc-adv b{color:var(--green-d)}
+  .sc-advq{font:700 11px var(--sans);color:var(--ink-dim)}
+  .sc-advbtn{padding:5px 11px;border-radius:8px;border:1.5px solid var(--line-2);background:var(--surface);color:var(--ink);font:700 12px var(--sans);cursor:pointer}
+  .sc-advbtn.sel{border-color:var(--green);background:var(--green-soft);color:var(--green-d)}
+
+  /* ---------- banners ---------- */
+  .qn-banner{border-radius:12px;padding:13px 15px;margin-bottom:16px;font-size:13px;line-height:1.5;display:none}
+  .qn-banner.show{display:block}
+  .qn-banner.ok{background:var(--green-soft);border:1px solid var(--green);color:var(--green-d)}
+  .qn-banner.err{background:var(--red-soft);border:1px solid var(--red);color:#B23A30}
+  .qn-banner.gold{background:var(--gold-soft);border:1px solid var(--gold);color:var(--gold-d)}
+
+  /* ---------- modal ---------- */
+  .qn-overlay{position:fixed;inset:0;background:rgba(22,40,79,.5);display:none;place-items:center;z-index:50;padding:20px}
+  .qn-overlay.show{display:grid}
+  .qn-modal{background:var(--surface);color:var(--ink);border-radius:18px;max-width:400px;width:100%;padding:24px 22px;text-align:center;box-shadow:0 24px 60px rgba(22,40,79,.3)}
+  .qn-modal h3{font-size:19px;font-weight:900}
+  .qn-modal p{font-size:14px;line-height:1.55;margin:12px 0 20px;color:var(--ink-2)}
+  .qn-mbtns{display:flex;gap:10px}
+  .qn-mbtns button{flex:1;padding:13px 8px;border-radius:11px;border:none;cursor:pointer;font:800 13px var(--sans)}
+  .qn-cancel{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line-2)}
+  .qn-confirm{background:var(--green);color:#fff}
+
+  /* ---------- leaderboard / people ---------- */
+  .qn-lrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px;width:100%;text-align:left;cursor:pointer;color:var(--ink);box-shadow:var(--shadow)}
+  .qn-lrow.top1{border-color:var(--gold);background:var(--gold-soft)}
+  .qn-lrank{width:32px;text-align:center;font:900 16px var(--mono);color:var(--ink-dim);flex:none}
+  .qn-linfo{flex:1;min-width:0}
+  .qn-lname{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qn-lsub{font-size:11px;color:var(--ink-dim);font-weight:600;margin-top:2px}
+  .qn-lpts{font:900 22px var(--mono);color:var(--green-d);flex:none;text-align:right}
+  .qn-lpts small{font:700 9px var(--sans);display:block;color:var(--ink-dim);letter-spacing:.12em;text-transform:uppercase}
+  .qn-empty{text-align:center;color:var(--ink-dim);padding:40px 16px;font-size:14px;line-height:1.6}
+  .qn-empty .big{font-size:40px;display:block;margin-bottom:10px}
+  .qn-back{background:var(--surface);border:1.5px solid var(--line-2);color:var(--ink-2);border-radius:10px;padding:9px 16px;cursor:pointer;font:800 12px var(--sans);margin-bottom:16px}
+  .qn-vtitle{font-size:19px;font-weight:900;margin-bottom:4px}
+  .qn-vmeta{font-size:12.5px;color:var(--ink-dim);margin-bottom:16px}
+  .qn-credit{text-align:center;font-size:11px;color:var(--ink-dim);padding:18px 0 4px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="qn-app">
+  <header class="qn-head">
+    <div class="qn-eyebrow">⚽ Mundial 2026 · Fase de eliminación</div>
+    <h1 class="qn-title">Quiniela <em>CORPETUR</em></h1>
+    <p class="qn-sub">Armá tu bracket y pronosticá los marcadores 🏆</p>
+  </header>
+
+  <div class="qn-tabs" role="tablist">
+    <button class="qn-tab" id="tabPlay" role="tab" aria-selected="true">🔮 Mi quiniela</button>
+    <button class="qn-tab" id="tabTable" role="tab" aria-selected="false">🏆 Tabla</button>
+    <button class="qn-tab" id="tabPeople" role="tab" aria-selected="false">👥 Participantes</button>
+  </div>
+
+  <div class="qn-body" id="viewPlay">
+    <div class="qn-banner" id="banner"></div>
+    <div class="qn-card" id="nameCard">
+      <label class="qn-label" for="playerName">Tu nombre</label>
+      <input class="qn-input" id="playerName" maxlength="30" placeholder="Ej. Javier" autocomplete="off">
+      <button class="qn-btn" id="loadBtn" style="margin-top:12px;width:100%">Entrar</button>
+      <p class="qn-hint">Usá el <strong>mismo nombre</strong> que en la quiniela de grupos. Primero sellás tu <strong>bracket</strong> (una sola vez) y luego los <strong>marcadores</strong> de cada ronda conforme se juegan.</p>
+    </div>
+    <div id="playArea"></div>
+    <p class="qn-credit">Quiniela CORPETUR · Eliminatoria · Mundial 2026 🏆</p>
+  </div>
+
+  <div class="qn-body" id="viewTable" style="display:none"></div>
+
+  <div class="qn-body" id="viewPeople" style="display:none">
+    <div id="peopleList"></div>
+    <div id="peopleDetail" style="display:none"></div>
+  </div>
+</div>
+
+<div class="qn-overlay" id="overlay">
+  <div class="qn-modal">
+    <h3 id="modalTitle">¿Sellar?</h3>
+    <p id="modalBody"></p>
+    <div class="qn-mbtns">
+      <button class="qn-cancel" id="btnCancel">Todavía no</button>
+      <button class="qn-confirm" id="btnConfirm">Sellar 🔒</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* =====================================================================
+   FIREBASE — mismo proyecto que la quiniela de grupos
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBgqLX_nWgWhnBArX1vYbObRAEsL4pX4no",
+  authDomain: "quiniela-corpetur.firebaseapp.com",
+  projectId: "quiniela-corpetur",
+  storageBucket: "quiniela-corpetur.firebasestorage.app",
+  messagingSenderId: "1048191356088",
+  appId: "1:1048191356088:web:34479a0c28f6ecfe4af84d"
+};
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+/* =====================================================================
+   ⚙️  CONFIGURÁS VOS CUANDO TERMINEN LOS GRUPOS
+   ===================================================================== */
+const ACTIVADO = false;   // → true cuando ya sepas las 32 clasificadas
+
+// Los 16 cruces de 16avos, en orden del bracket oficial (de arriba a abajo).
+// [local, visitante] con los códigos de TEAMS. (Esto es EJEMPLO; reemplazalo.)
+const R32 = [
+  ["MEX","SUI"], ["BRA","SCO"], ["USA","TUR"], ["GER","ECU"],
+  ["NED","JPN"], ["BEL","IRN"], ["ESP","URU"], ["FRA","SEN"],
+  ["ARG","AUT"], ["POR","COL"], ["ENG","CRO"], ["CAN","BIH"],
+  ["KOR","MAR"], ["AUS","PAR"], ["CIV","SWE"], ["NOR","EGY"]
+];
+
+// (Opcional) hora UTC de inicio por partido: KICKOFF["r32_1"]="2026-06-29T19:00:00Z";
+const KICKOFF = {};
+/* ===================================================================== */
+
+const TEAMS = {
+  MEX:["🇲🇽","México"], RSA:["🇿🇦","Sudáfrica"], KOR:["🇰🇷","Corea del Sur"], CZE:["🇨🇿","Chequia"],
+  CAN:["🇨🇦","Canadá"], BIH:["🇧🇦","Bosnia"], QAT:["🇶🇦","Catar"], SUI:["🇨🇭","Suiza"],
+  BRA:["🇧🇷","Brasil"], MAR:["🇲🇦","Marruecos"], HAI:["🇭🇹","Haití"], SCO:["🏴󠁧󠁢󠁳󠁣󠁴󠁿","Escocia"],
+  USA:["🇺🇸","EE. UU."], PAR:["🇵🇾","Paraguay"], AUS:["🇦🇺","Australia"], TUR:["🇹🇷","Turquía"],
+  GER:["🇩🇪","Alemania"], CUW:["🇨🇼","Curazao"], CIV:["🇨🇮","C. de Marfil"], ECU:["🇪🇨","Ecuador"],
+  NED:["🇳🇱","Países Bajos"], JPN:["🇯🇵","Japón"], SWE:["🇸🇪","Suecia"], TUN:["🇹🇳","Túnez"],
+  BEL:["🇧🇪","Bélgica"], EGY:["🇪🇬","Egipto"], IRN:["🇮🇷","Irán"], NZL:["🇳🇿","N. Zelanda"],
+  ESP:["🇪🇸","España"], CPV:["🇨🇻","Cabo Verde"], KSA:["🇸🇦","Arabia Saudita"], URU:["🇺🇾","Uruguay"],
+  FRA:["🇫🇷","Francia"], SEN:["🇸🇳","Senegal"], IRQ:["🇮🇶","Irak"], NOR:["🇳🇴","Noruega"],
+  ARG:["🇦🇷","Argentina"], ALG:["🇩🇿","Argelia"], AUT:["🇦🇹","Austria"], JOR:["🇯🇴","Jordania"],
+  POR:["🇵🇹","Portugal"], COD:["🇨🇩","RD Congo"], UZB:["🇺🇿","Uzbekistán"], COL:["🇨🇴","Colombia"],
+  ENG:["🏴󠁧󠁢󠁥󠁮󠁧󠁿","Inglaterra"], CRO:["🇭🇷","Croacia"], GHA:["🇬🇭","Ghana"], PAN:["🇵🇦","Panamá"],
+  TBD:["⚪","Por definir"]
+};
+const flagOf = c => (TEAMS[c]||TEAMS.TBD)[0];
+const nameOf = c => (TEAMS[c]||TEAMS.TBD)[1];
+
+/* =====================================================================
+   MOTOR DE PUNTOS (verificado con pruebas)
+   ===================================================================== */
+const ROUND_IDS = {
+  r32: Array.from({length:16},(_,i)=>"r32_"+(i+1)),
+  r16: Array.from({length:8 },(_,i)=>"r16_"+(i+1)),
+  qf:  Array.from({length:4 },(_,i)=>"qf_"+(i+1)),
+  sf:  Array.from({length:2 },(_,i)=>"sf_"+(i+1)),
+  f:   ["f_1"], tp:["tp_1"]
+};
+const BRK_PTS = { octavos:1, cuartos:2, semis:4, final:8, campeon:25 };
+const SCORE_ROUNDS = [
+  { key:"r32",   label:"16avos de final",   coll:"el_r32",   ids:ROUND_IDS.r32 },
+  { key:"r16",   label:"Octavos de final",  coll:"el_r16",   ids:ROUND_IDS.r16 },
+  { key:"qf",    label:"Cuartos de final",  coll:"el_qf",    ids:ROUND_IDS.qf  },
+  { key:"sf",    label:"Semifinales",       coll:"el_sf",    ids:ROUND_IDS.sf  },
+  { key:"final", label:"Final y 3.º lugar", coll:"el_final", ids:["tp_1","f_1"] }
+];
+const SCORE_IDS = [...ROUND_IDS.r32,...ROUND_IDS.r16,...ROUND_IDS.qf,...ROUND_IDS.sf,"tp_1","f_1"];
+const RES_DOC = ["resultados","eliminatorias"];
+
+function parseRes(v){
+  if(v==null) return null;
+  if(Array.isArray(v)) v = v.join("-");
+  const m = String(v).trim().match(/^(\d+)\s*[-–:]\s*(\d+)\s*(?:p\s*([HA]))?$/i);
+  if(!m) return null;
+  const h=parseInt(m[1],10), a=parseInt(m[2],10);
+  let adv=null;
+  if(h>a) adv="home"; else if(a>h) adv="away"; else if(m[3]) adv=m[3].toUpperCase()==="H"?"home":"away";
+  return {h,a,adv};
+}
+function deriveActual(seed, results){
+  const matchups={};
+  for(let i=0;i<16;i++) matchups["r32_"+(i+1)]={home:seed[i][0],away:seed[i][1]};
+  const advOf=id=>{const r=results[id],m=matchups[id];if(!r||!m||!r.adv)return null;return r.adv==="home"?m.home:m.away;};
+  const loserOf=id=>{const r=results[id],m=matchups[id];if(!r||!m||!r.adv)return null;return r.adv==="home"?m.away:m.home;};
+  for(let i=1;i<=8;i++){const h=advOf("r32_"+(2*i-1)),a=advOf("r32_"+(2*i));if(h&&a)matchups["r16_"+i]={home:h,away:a};}
+  for(let i=1;i<=4;i++){const h=advOf("r16_"+(2*i-1)),a=advOf("r16_"+(2*i));if(h&&a)matchups["qf_"+i]={home:h,away:a};}
+  for(let i=1;i<=2;i++){const h=advOf("qf_"+(2*i-1)),a=advOf("qf_"+(2*i));if(h&&a)matchups["sf_"+i]={home:h,away:a};}
+  {const fh=advOf("sf_1"),fa=advOf("sf_2");if(fh&&fa)matchups["f_1"]={home:fh,away:fa};
+   const lh=loserOf("sf_1"),la=loserOf("sf_2");if(lh&&la)matchups["tp_1"]={home:lh,away:la};}
+  const reach={octavos:new Set(),cuartos:new Set(),semis:new Set(),final:new Set(),campeon:null};
+  ROUND_IDS.r32.forEach(id=>{const t=advOf(id);if(t)reach.octavos.add(t);});
+  ROUND_IDS.r16.forEach(id=>{const t=advOf(id);if(t)reach.cuartos.add(t);});
+  ROUND_IDS.qf .forEach(id=>{const t=advOf(id);if(t)reach.semis.add(t);});
+  ROUND_IDS.sf .forEach(id=>{const t=advOf(id);if(t)reach.final.add(t);});
+  reach.campeon=advOf("f_1");
+  return {matchups,advOf,reach};
+}
+function bracketPoints(bracket, reach){
+  const z={total:0,octavos:0,cuartos:0,semis:0,final:0,campeon:0};
+  if(!bracket) return z;
+  let oc=0,cu=0,se=0,fi=0,ca=0;
+  ROUND_IDS.r32.forEach(id=>{if(bracket[id]&&reach.octavos.has(bracket[id]))oc++;});
+  ROUND_IDS.r16.forEach(id=>{if(bracket[id]&&reach.cuartos.has(bracket[id]))cu++;});
+  ROUND_IDS.qf .forEach(id=>{if(bracket[id]&&reach.semis.has(bracket[id]))se++;});
+  ROUND_IDS.sf .forEach(id=>{if(bracket[id]&&reach.final.has(bracket[id]))fi++;});
+  if(bracket.f_1&&reach.campeon&&bracket.f_1===reach.campeon)ca=1;
+  return {total:oc*BRK_PTS.octavos+cu*BRK_PTS.cuartos+se*BRK_PTS.semis+fi*BRK_PTS.final+ca*BRK_PTS.campeon,
+          octavos:oc,cuartos:cu,semis:se,final:fi,campeon:ca};
+}
+function scoreMatch(pick, res){
+  if(!pick||pick.h==null||pick.a==null||!res) return 0;
+  if(pick.h===res.h&&pick.a===res.a) return 5;
+  let predAdv=pick.h>pick.a?"home":pick.a>pick.h?"away":(pick.adv||null);
+  if(predAdv&&res.adv&&predAdv===res.adv) return 3;
+  return 0;
+}
+function countsFor(id, sealMs){
+  if(!KICKOFF[id]) return true;
+  if(!sealMs) return false;
+  return sealMs < Date.parse(KICKOFF[id]);
+}
+
+/* =====================================================================
+   ESTADO
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const slug = n => n.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+function banner(t,h){const b=$("#banner");b.className="qn-banner show "+t;b.innerHTML=h;b.scrollIntoView({behavior:"smooth",block:"nearest"});}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+let results={};
+let derived=deriveActual(R32,results);
+const store={el_bracket:{},el_r32:{},el_r16:{},el_qf:{},el_sf:{},el_final:{}};
+let currentUser=null;
+let bracketPicks={};
+let scorePicks={};
+
+function matchupsKnown(round){ if(!ACTIVADO) return false; return round.ids.every(id=>derived.matchups[id]); }
+function allResultsIn(round){ return round.ids.every(id=>results[id]); }
+function currentScoreRound(){ for(const r of SCORE_ROUNDS){ if(matchupsKnown(r)&&!allResultsIn(r)) return r; } return null; }
+
+/* =====================================================================
+   BRACKET (cuadro con VS y líneas)
+   ===================================================================== */
+const BK_COLS = [
+  {key:"r32",label:"16avos",ids:ROUND_IDS.r32},
+  {key:"r16",label:"Octavos",ids:ROUND_IDS.r16},
+  {key:"qf", label:"Cuartos",ids:ROUND_IDS.qf},
+  {key:"sf", label:"Semis",  ids:ROUND_IDS.sf},
+  {key:"f",  label:"Final",  ids:["f_1"]},
+  {key:"champ",label:"Campeón",ids:["champ"]}
+];
+const FEEDERS = (()=>{
+  const p=[];
+  for(let i=1;i<=8;i++) p.push(["r32_"+(2*i-1),"r16_"+i],["r32_"+(2*i),"r16_"+i]);
+  for(let i=1;i<=4;i++) p.push(["r16_"+(2*i-1),"qf_"+i],["r16_"+(2*i),"qf_"+i]);
+  for(let i=1;i<=2;i++) p.push(["qf_"+(2*i-1),"sf_"+i],["qf_"+(2*i),"sf_"+i]);
+  p.push(["sf_1","f_1"],["sf_2","f_1"],["f_1","champ"]);
+  return p;
+})();
+
+function bracketMatchups(picks){
+  const m={};
+  for(let i=0;i<16;i++) m["r32_"+(i+1)]={home:R32[i][0],away:R32[i][1]};
+  for(let i=1;i<=8;i++){const h=picks["r32_"+(2*i-1)],a=picks["r32_"+(2*i)];m["r16_"+i]={home:h||null,away:a||null};}
+  for(let i=1;i<=4;i++){const h=picks["r16_"+(2*i-1)],a=picks["r16_"+(2*i)];m["qf_"+i]={home:h||null,away:a||null};}
+  for(let i=1;i<=2;i++){const h=picks["qf_"+(2*i-1)],a=picks["qf_"+(2*i)];m["sf_"+i]={home:h||null,away:a||null};}
+  m["f_1"]={home:picks["sf_1"]||null,away:picks["sf_2"]||null};
+  return m;
+}
+function clearDownstream(){
+  let changed=true;
+  while(changed){ changed=false; const m=bracketMatchups(bracketPicks);
+    [...ROUND_IDS.r16,...ROUND_IDS.qf,...ROUND_IDS.sf,"f_1"].forEach(id=>{
+      const mm=m[id],p=bracketPicks[id];
+      if(p&&p!==mm.home&&p!==mm.away){ delete bracketPicks[id]; changed=true; }
+    });
+  }
+}
+function teamReachedNextRound(mid, code){
+  const round=mid.split("_")[0];
+  const tgt=round==="r32"?derived.reach.octavos:round==="r16"?derived.reach.cuartos:
+            round==="qf"?derived.reach.semis:round==="sf"?derived.reach.final:
+            round==="f"?(derived.reach.campeon?new Set([derived.reach.campeon]):null):null;
+  if(!tgt||tgt.size===0) return null;
+  return tgt.has(code);
+}
+
+function slotHTML(mid, code, readonly){
+  const tbd=!code;
+  const sel=!tbd&&bracketPicks[mid]===code;
+  let cls="bk-slot"+(tbd?" tbd":"")+(sel?" sel":"");
+  if(readonly&&sel&&!tbd){ const w=teamReachedNextRound(mid,code); if(w===true)cls=cls.replace("sel","win"); else if(w===false)cls=cls.replace("sel","miss"); }
+  return '<button class="'+cls+'" data-mid="'+mid+'" data-code="'+(code||"")+'"'+((readonly||tbd)?" disabled":"")+'>'+
+    '<span class="flag">'+flagOf(code||"TBD")+'</span><span class="nm">'+esc(nameOf(code||"TBD"))+'</span><span class="chk"></span></button>';
+}
+function cardHTML(mid, readonly){
+  const m=bracketMatchups(bracketPicks)[mid];
+  return '<div class="bk-card" data-node="'+mid+'">'+slotHTML(mid,m.home,readonly)+
+    '<div class="bk-vs"><span>VS</span></div>'+slotHTML(mid,m.away,readonly)+'</div>';
+}
+function champCardHTML(readonly){
+  const c=bracketPicks["f_1"];
+  let cls="";
+  if(readonly&&c){ const w=derived.reach.campeon?(derived.reach.campeon===c):null; if(w===true)cls="win"; else if(w===false)cls="miss"; }
+  return '<div class="bk-champcard" data-node="champ">'+
+    '<div class="t">🏆</div><div class="l">Campeón</div>'+
+    (c?'<div class="n"><span>'+flagOf(c)+'</span>'+esc(nameOf(c))+(cls==="win"?" ✓":cls==="miss"?" ✗":"")+'</div>'
+       :'<div class="n empty">— por elegir —</div>')+'</div>';
+}
+
+function renderBracket(host, readonly){
+  if(!host) return;
+  let html='';
+  // banner del campeón arriba (resumen)
+  const champ=bracketPicks["f_1"];
+  html+='<div class="bk-champ"><span class="trophy">🏆</span><div><div class="lbl">Tu campeón</div>'+
+    '<div class="who">'+(champ?'<span class="flag">'+flagOf(champ)+'</span>'+esc(nameOf(champ)):'<span class="empty">— por elegir —</span>')+'</div></div></div>';
+  html+='<div class="bk-scrollhint">Deslizá el cuadro de lado para verlo completo →</div>';
+  html+='<div class="bk"><div class="bk-content"><svg class="bk-lines"></svg>';
+  BK_COLS.forEach(col=>{
+    html+='<div class="bk-col"><div class="bk-collabel">'+col.label+'</div><div class="bk-ties">';
+    col.ids.forEach(id=>{
+      html+='<div class="bk-tie">'+(col.key==="champ"?champCardHTML(readonly):cardHTML(id,readonly))+'</div>';
+    });
+    html+='</div></div>';
+  });
+  html+='</div></div>';
+  host.innerHTML=html;
+
+  if(!readonly){
+    host.querySelectorAll(".bk-slot").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const mid=btn.getAttribute("data-mid"),code=btn.getAttribute("data-code");
+        if(!code||code==="TBD") return;
+        bracketPicks[mid]=code; clearDownstream();
+        renderBracket(host,false); refreshBracketProgress();
+      });
+    });
+  }
+  requestAnimationFrame(()=>drawLines(host));
+}
+
+function drawLines(host){
+  const layer=host.querySelector(".bk-content");
+  const svg=host.querySelector(".bk-lines");
+  if(!layer||!svg) return;
+  const W=layer.scrollWidth, H=layer.scrollHeight;
+  svg.setAttribute("width",W); svg.setAttribute("height",H);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  const lr=layer.getBoundingClientRect();
+  const box=id=>{ const el=layer.querySelector('[data-node="'+id+'"]'); if(!el) return null;
+    const r=el.getBoundingClientRect();
+    return { l:r.left-lr.left+layer.scrollLeft, t:r.top-lr.top+layer.scrollTop, w:r.width, h:r.height }; };
+  let d="";
+  FEEDERS.forEach(([f,t])=>{
+    const a=box(f), b=box(t); if(!a||!b) return;
+    const x1=a.l+a.w, y1=a.t+a.h/2, x2=b.l, y2=b.t+b.h/2, xm=(x1+x2)/2;
+    d+="M "+x1+" "+y1+" H "+xm+" V "+y2+" H "+x2+" ";
+  });
+  svg.innerHTML='<path d="'+d+'" fill="none" stroke="#CFDBEC" stroke-width="2" stroke-linejoin="round"/>';
+}
+function refreshBracketProgress(){
+  const done=[...ROUND_IDS.r32,...ROUND_IDS.r16,...ROUND_IDS.qf,...ROUND_IDS.sf,"f_1"].filter(id=>bracketPicks[id]).length;
+  const btn=$("#sealBracketBtn"); if(btn) btn.disabled = done!==31;
+}
+window.addEventListener("resize",()=>{ const h=$("#bracketWrap")||$("#detBracket"); if(h) drawLines(h); });
+
+/* =====================================================================
+   SCORE form
+   ===================================================================== */
+function advName(mm,p){
+  if(!p||p.h==null||p.a==null) return null;
+  if(p.h>p.a) return mm.home; if(p.a>p.h) return mm.away;
+  return p.adv==="home"?mm.home:p.adv==="away"?mm.away:null;
+}
+function renderScoreForm(host, round, readonly){
+  if(!host) return;
+  let html="";
+  round.ids.forEach(id=>{
+    const mm=derived.matchups[id];
+    if(!mm){ html+='<div class="sc-match" style="text-align:center;color:var(--ink-dim);font-weight:700">Cruce por definir…</div>'; return; }
+    const hc=mm.home,ac=mm.away,p=scorePicks[id]||{};
+    const hv=(p.h!=null)?p.h:"", av=(p.a!=null)?p.a:"";
+    const res=readonly?results[id]:null;
+    let hitCls="",tag="";
+    if(readonly&&res){ const s=scoreMatch(p,res); tag=s===5?"🎯 +5":s===3?"✓ +3":"✗ +0"; hitCls=s===5?" hit5":s===3?" hit3":" hit0"; }
+    const label=id==="tp_1"?"3.º lugar":id==="f_1"?"FINAL":"";
+    const tie=(hv!==""&&av!==""&&Number(hv)===Number(av));
+    const adv=advName(mm,p);
+    let foot="";
+    if(label) foot+='<span class="sc-label">'+label+'</span>';
+    if(readonly&&res){
+      const realAdv=res.adv==="home"?hc:res.adv==="away"?ac:null;
+      foot+='<span class="sc-adv">Real '+res.h+'–'+res.a+(res.h===res.a&&realAdv?' (pen '+esc(nameOf(realAdv))+')':'')+'</span>';
+      foot+='<span class="sc-tag" style="margin-left:auto;background:'+(tag[0]==="🎯"?"var(--green-soft)":tag[0]==="✓"?"var(--gold-soft)":"var(--red-soft)")+'">'+tag+'</span>';
+    }else if(tie){
+      foot+='<span class="sc-advq">Empate → ¿quién pasa?</span>'+
+        '<button class="sc-advbtn'+(p.adv==="home"?" sel":"")+'" data-adv-side="home" data-mid="'+id+'">'+esc(nameOf(hc))+'</button>'+
+        '<button class="sc-advbtn'+(p.adv==="away"?" sel":"")+'" data-adv-side="away" data-mid="'+id+'">'+esc(nameOf(ac))+'</button>';
+    }else if(adv){
+      foot+='<span class="sc-adv">Avanza: <b>'+esc(nameOf(adv))+'</b></span>';
+    }
+    html+='<div class="sc-match" data-mid="'+id+'">'+
+      '<div class="sc-top">'+
+        '<div class="sc-team"><span class="sc-flag">'+flagOf(hc)+'</span><span class="sc-name">'+esc(nameOf(hc))+'</span></div>'+
+        '<div class="sc-score">'+
+          '<input class="qn-cell'+(hv!==""?" filled":"")+hitCls+'" data-mid="'+id+'" data-side="0" type="number" inputmode="numeric" min="0" max="20" value="'+hv+'"'+(readonly?" readonly tabindex=\"-1\"":"")+'>'+
+          '<span class="sc-vs">VS</span>'+
+          '<input class="qn-cell'+(av!==""?" filled":"")+hitCls+'" data-mid="'+id+'" data-side="1" type="number" inputmode="numeric" min="0" max="20" value="'+av+'"'+(readonly?" readonly tabindex=\"-1\"":"")+'>'+
+        '</div>'+
+        '<div class="sc-team right"><span class="sc-name">'+esc(nameOf(ac))+'</span><span class="sc-flag">'+flagOf(ac)+'</span></div>'+
+      '</div>'+
+      (foot?'<div class="sc-foot">'+foot+'</div>':'')+
+    '</div>';
+  });
+  host.innerHTML=html;
+  if(readonly) return;
+  host.querySelectorAll(".qn-cell").forEach(el=>{
+    el.addEventListener("focus",()=>el.select());
+    el.addEventListener("input",()=>{
+      if(el.value.length>2) el.value=el.value.slice(0,2);
+      const id=el.getAttribute("data-mid"),side=+el.getAttribute("data-side");
+      if(!scorePicks[id]) scorePicks[id]={h:null,a:null,adv:null};
+      const v=el.value.trim();
+      scorePicks[id][side===0?"h":"a"]=v===""?null:Math.max(0,Math.min(20,parseInt(v,10)));
+      renderScoreForm(host,round,false);     // re-render para actualizar "Avanza"/toggle
+      const cell=host.querySelector('.qn-cell[data-mid="'+id+'"][data-side="'+side+'"]');
+      if(cell){ cell.focus(); }
+      refreshScoreProgress(round);
+    });
+  });
+  host.querySelectorAll(".sc-advbtn").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const id=b.getAttribute("data-mid"),side=b.getAttribute("data-adv-side");
+      if(!scorePicks[id]) scorePicks[id]={h:null,a:null,adv:null};
+      scorePicks[id].adv=side; renderScoreForm(host,round,false); refreshScoreProgress(round);
+    });
+  });
+  refreshScoreProgress(round);
+}
+function refreshScoreProgress(round){
+  const btn=$("#sealScoreBtn"); if(!btn) return;
+  const ok=round.ids.every(id=>{ if(!derived.matchups[id]) return false; const p=scorePicks[id];
+    if(!p||p.h==null||p.a==null) return false; if(p.h===p.a&&!p.adv) return false; return true; });
+  btn.disabled=!ok;
+}
+
+/* =====================================================================
+   MI QUINIELA
+   ===================================================================== */
+async function loadUser(){
+  const name=$("#playerName").value.trim();
+  if(!name){ banner("err","Escribí tu nombre para entrar."); return; }
+  const id=slug(name);
+  if(!id){ banner("err","Escribí un nombre válido (letras o números)."); return; }
+  currentUser={name,id}; $("#banner").className="qn-banner";
+  try{ const s=await getDoc(doc(db,"el_bracket",id)); currentUser.bracket=s.exists()?s.data():null; }catch(e){ currentUser.bracket=null; }
+  renderPlay();
+}
+function renderPlay(){
+  const area=$("#playArea"); if(!currentUser){ area.innerHTML=""; return; }
+  if(!ACTIVADO){
+    area.innerHTML='<div class="qn-card"><div class="qn-step"><span class="qn-stepnum">⏳</span><span class="qn-steptitle">Aún no abre</span></div>'+
+      '<p class="qn-hint">La quiniela de eliminación se activa cuando termine la fase de grupos y se conozcan las <strong>32 clasificadas</strong>. Volvé a entrar con este mismo link en cuanto se anuncie. 📲</p></div>';
+    return;
+  }
+  const sealed=!!currentUser.bracket;
+  let html='<div class="qn-card"><div class="qn-step"><span class="qn-stepnum">1</span><span class="qn-steptitle">Tu bracket</span>'+
+    (sealed?'<span class="qn-pill ok">Sellado ✓</span>':'<span class="qn-pill wait">Pendiente</span>')+'</div>';
+  if(sealed){ bracketPicks=currentUser.bracket.picks||{}; html+='<div id="bracketWrap"></div>'; }
+  else{
+    bracketPicks={};
+    html+='<p class="qn-hint" style="margin-bottom:14px">Tocá al equipo que creés que <strong>avanza</strong> en cada llave, hasta coronar tu campeón. Una vez sellado <strong>no se puede cambiar</strong>.<br>Puntos: octavos <strong>1</strong> · cuartos <strong>2</strong> · semis <strong>4</strong> · final <strong>8</strong> · campeón <strong>25</strong>.</p>'+
+      '<div id="bracketWrap"></div>'+
+      '<button class="qn-btn gold" id="sealBracketBtn" style="width:100%;margin-top:12px" disabled>Sellar bracket 🔒</button>';
+  }
+  html+='</div>';
+
+  const cur=currentScoreRound();
+  html+='<div class="qn-card"><div class="qn-step"><span class="qn-stepnum g">2</span><span class="qn-steptitle">Marcadores</span><span class="qn-pill" id="scorePill"></span></div>';
+  if(!cur){ html+='<p class="qn-hint">No hay ronda abierta en este momento. La siguiente se habilita en cuanto se confirmen los cruces. ⚽</p>'; }
+  else if(!sealed){ html+='<p class="qn-hint">Primero sellá tu <strong>bracket</strong> (arriba). Después pronosticás los marcadores de <strong>'+cur.label+'</strong>.</p>'; }
+  else{
+    const already=!!store[cur.coll][currentUser.id];
+    if(already){ scorePicks=store[cur.coll][currentUser.id].scores||{};
+      html+='<p class="qn-hint">Ya sellaste los marcadores de <strong>'+cur.label+'</strong> ✓ Cuando abra la próxima ronda, entrá de nuevo.</p><div id="scoreWrap"></div>'; }
+    else{ scorePicks={};
+      html+='<p class="qn-hint" style="margin-bottom:14px">Marcador a los <strong>90 minutos</strong> de cada partido de <strong>'+cur.label+'</strong>. Si ponés empate, elegí quién pasa por penales. Exacto <strong>5</strong> pts · acertar quién pasa <strong>3</strong> pts.</p>'+
+        '<div id="scoreWrap"></div>'+
+        '<button class="qn-btn" id="sealScoreBtn" style="width:100%;margin-top:12px" disabled>Sellar '+esc(cur.label)+' 🔒</button>'; }
+  }
+  html+='</div>';
+  area.innerHTML=html;
+
+  renderBracket($("#bracketWrap"), sealed);
+  if(!sealed&&$("#sealBracketBtn")) $("#sealBracketBtn").addEventListener("click",askSealBracket);
+
+  if(cur&&sealed){
+    const already=!!store[cur.coll][currentUser.id];
+    renderScoreForm($("#scoreWrap"),cur,already);
+    const pill=$("#scorePill"); pill.className="qn-pill"+(already?" ok":" wait"); pill.textContent=already?"Sellado ✓":cur.label;
+    if(!already&&$("#sealScoreBtn")) $("#sealScoreBtn").addEventListener("click",()=>askSealScore(cur));
+  }else{ const pill=$("#scorePill"); if(pill){ pill.className="qn-pill"; pill.textContent=cur?cur.label:"—"; } }
+}
+
+/* ---- sellar ---- */
+let pendingSeal=null;
+function askSealBracket(){
+  const c=bracketPicks["f_1"]; pendingSeal={type:"bracket"};
+  $("#modalTitle").textContent="🏆 ¿Sellar tu bracket?";
+  $("#modalBody").innerHTML="Tu campeón es <strong>"+esc(nameOf(c))+"</strong>. Después de sellarlo <strong>no podrás cambiar ningún equipo</strong> del cuadro.";
+  $("#overlay").classList.add("show");
+}
+function askSealScore(round){
+  pendingSeal={type:"score",round};
+  $("#modalTitle").textContent="⚽ ¿Sellar "+round.label+"?";
+  $("#modalBody").innerHTML="Tus marcadores de <strong>"+esc(round.label)+"</strong> quedarán sellados y <strong>no se podrán editar</strong>.";
+  $("#overlay").classList.add("show");
+}
+$("#btnCancel").addEventListener("click",()=>$("#overlay").classList.remove("show"));
+$("#btnConfirm").addEventListener("click",doSeal);
+async function doSeal(){
+  $("#overlay").classList.remove("show");
+  if(!pendingSeal||!currentUser) return;
+  const id=currentUser.id,name=currentUser.name;
+  try{
+    if(pendingSeal.type==="bracket"){
+      const s=await getDoc(doc(db,"el_bracket",id));
+      if(s.exists()){ currentUser.bracket=s.data(); renderPlay(); banner("err","⛔ <strong>"+esc(name)+"</strong> ya tiene un bracket sellado y no se puede sobrescribir."); return; }
+      await setDoc(doc(db,"el_bracket",id),{name,picks:{...bracketPicks},ts:serverTimestamp()});
+      currentUser.bracket={name,picks:{...bracketPicks}};
+      banner("ok","🔒 ¡Bracket sellado, <strong>"+esc(name)+"</strong>! Ahora pronosticá los marcadores de la ronda abierta. ¡Suerte! 🍀");
+    }else{
+      const round=pendingSeal.round;
+      const s=await getDoc(doc(db,round.coll,id));
+      if(s.exists()){ banner("err","⛔ Ya sellaste los marcadores de "+esc(round.label)+"."); renderPlay(); return; }
+      await setDoc(doc(db,round.coll,id),{name,scores:{...scorePicks},ts:serverTimestamp()});
+      banner("ok","🔒 ¡Listo! Sellaste los marcadores de <strong>"+esc(round.label)+"</strong>. Se actualizan en la tabla en vivo ⚡");
+    }
+    renderPlay(); window.scrollTo({top:0,behavior:"smooth"});
+  }catch(err){
+    if(err&&err.code==="permission-denied") banner("err","⛔ Eso ya está sellado y no se puede sobrescribir, o las inscripciones están cerradas.");
+    else banner("err","Algo falló al guardar ("+(err&&err.code?err.code:"error de red")+"). Revisá tu conexión e intentá de nuevo — tus pronósticos siguen aquí.");
+  }
+}
+
+/* =====================================================================
+   LISTENERS
+   ===================================================================== */
+function listenAll(){
+  onSnapshot(doc(db,RES_DOC[0],RES_DOC[1]),snap=>{
+    results={}; if(snap.exists()){ const d=snap.data(); Object.keys(d).forEach(k=>{const r=parseRes(d[k]);if(r)results[k]=r;}); }
+    derived=deriveActual(R32,results);
+    if($("#viewTable").style.display!=="none") renderTable();
+    if($("#viewPeople").style.display!=="none"&&$("#peopleDetail").style.display==="none") renderPeopleList();
+    if($("#viewPlay").style.display!=="none"&&currentUser) renderPlay();
+  },()=>{});
+  ["el_bracket","el_r32","el_r16","el_qf","el_sf","el_final"].forEach(coll=>{
+    onSnapshot(collection(db,coll),snap=>{
+      store[coll]={}; snap.forEach(d=>store[coll][d.id]=d.data());
+      if($("#viewTable").style.display!=="none") renderTable();
+      if($("#viewPeople").style.display!=="none"&&$("#peopleDetail").style.display==="none") renderPeopleList();
+      if($("#viewPlay").style.display!=="none"&&currentUser) renderPlay();
+    },()=>{});
+  });
+}
+function gatherPlayer(id){
+  const b=store.el_bracket[id];
+  const scoresByRound={ r32:store.el_r32[id]?.scores||{}, r16:store.el_r16[id]?.scores||{},
+    qf:store.el_qf[id]?.scores||{}, sf:store.el_sf[id]?.scores||{}, final:store.el_final[id]?.scores||{} };
+  const name=b?.name||store.el_r32[id]?.name||store.el_r16[id]?.name||store.el_qf[id]?.name||store.el_sf[id]?.name||store.el_final[id]?.name||id;
+  return {id,name,bracket:b?b.picks:null,scoresByRound,hasBracket:!!b};
+}
+function allPlayerIds(){ const s=new Set(); Object.values(store).forEach(c=>Object.keys(c).forEach(id=>s.add(id))); return [...s]; }
+function totalScorePoints(sbr){
+  const all={...sbr.r32,...sbr.r16,...sbr.qf,...sbr.sf,...sbr.final};
+  let pts=0,exactos=0,aciertos=0;
+  SCORE_IDS.forEach(id=>{const res=results[id];if(!res)return;const s=scoreMatch(all[id],res);pts+=s;if(s===5)exactos++;else if(s===3)aciertos++;});
+  return {pts,exactos,aciertos};
+}
+
+/* =====================================================================
+   TABLA
+   ===================================================================== */
+function renderTable(){
+  const v=$("#viewTable"); const ids=allPlayerIds();
+  if(ids.length===0){ v.innerHTML='<div class="qn-empty"><span class="big">🥅</span>Todavía nadie ha sellado nada.<br>Armá tu bracket en <strong>Mi quiniela</strong>.</div>'; return; }
+  const rows=ids.map(id=>{ const p=gatherPlayer(id); const bp=bracketPoints(p.bracket,derived.reach); const sp=totalScorePoints(p.scoresByRound);
+    return {name:p.name,total:bp.total+sp.pts,brk:bp.total,sco:sp.pts,exactos:sp.exactos,champ:p.bracket?p.bracket.f_1:null}; });
+  rows.sort((a,b)=>b.total-a.total||b.exactos-a.exactos||a.name.localeCompare(b.name));
+  const anyRes=Object.keys(results).length>0;
+  let html='<div class="qn-banner gold show" style="margin-bottom:14px">📊 Tabla en vivo ⚡ Suma <strong>bracket</strong> (octavos 1 · cuartos 2 · semis 4 · final 8 · campeón 25) + <strong>marcadores</strong> (exacto 5 · quién pasa 3).'+(anyRes?'':' Aún sin resultados.')+'</div>';
+  const medals=["🥇","🥈","🥉"]; let lp=null,lr=0;
+  rows.forEach((r,i)=>{ const rank=(r.total===lp)?lr:i+1; lp=r.total; lr=rank; const badge=rank<=3?medals[rank-1]:rank+".";
+    const ch=r.champ?('⭐ '+flagOf(r.champ)+' '+nameOf(r.champ)):'sin bracket';
+    html+='<div class="qn-lrow'+(rank===1?' top1':'')+'"><div class="qn-lrank">'+badge+'</div>'+
+      '<div class="qn-linfo"><div class="qn-lname"></div><div class="qn-lsub">bracket '+r.brk+' · marcadores '+r.sco+' · '+esc(ch)+'</div></div>'+
+      '<div class="qn-lpts">'+r.total+'<small>pts</small></div></div>'; });
+  v.innerHTML=html;
+  v.querySelectorAll(".qn-lname").forEach((el,i)=>el.textContent=rows[i].name);
+}
+
+/* =====================================================================
+   PARTICIPANTES
+   ===================================================================== */
+function renderPeopleList(){
+  const list=$("#peopleList"); $("#peopleDetail").style.display="none"; list.style.display="block";
+  const ids=allPlayerIds();
+  if(ids.length===0){ list.innerHTML='<div class="qn-empty"><span class="big">🥅</span>Todavía nadie ha sellado nada.</div>'; return; }
+  const ppl=ids.map(gatherPlayer).sort((a,b)=>a.name.localeCompare(b.name));
+  let html='<div class="qn-banner gold show" style="margin-bottom:14px">🏟️ <strong>'+ppl.length+'</strong> participante'+(ppl.length===1?"":"s")+'. Tocá uno para ver su bracket y marcadores. En vivo ⚡</div>';
+  ppl.forEach(p=>{ const c=p.bracket?p.bracket.f_1:null;
+    html+='<button class="qn-lrow" data-id="'+p.id+'"><div class="qn-lrank">'+esc(p.name.charAt(0).toUpperCase())+'</div>'+
+      '<div class="qn-linfo"><div class="qn-lname"></div><div class="qn-lsub">'+(p.hasBracket?('campeón ⭐ '+flagOf(c)+' '+esc(nameOf(c))):'sin bracket aún')+'</div></div>'+
+      '<div class="qn-lpts" style="font-size:13px">🔒</div></button>'; });
+  list.innerHTML=html;
+  const els=list.querySelectorAll(".qn-lname"); ppl.forEach((p,i)=>els[i].textContent=p.name);
+  list.querySelectorAll("[data-id]").forEach(b=>b.addEventListener("click",()=>showDetail(b.getAttribute("data-id"))));
+}
+function showDetail(id){
+  const p=gatherPlayer(id); const bp=bracketPoints(p.bracket,derived.reach); const sp=totalScorePoints(p.scoresByRound);
+  $("#peopleList").style.display="none"; const det=$("#peopleDetail"); det.style.display="block";
+  let html='<button class="qn-back" id="backBtn">← Participantes</button><h2 class="qn-vtitle">🔒 '+esc(p.name)+'</h2>'+
+    '<p class="qn-vmeta">Total <strong style="color:var(--green-d)">'+(bp.total+sp.pts)+' pts</strong> · bracket '+bp.total+' · marcadores '+sp.pts+'</p>';
+  if(p.bracket) html+='<div class="qn-card"><div class="qn-step"><span class="qn-stepnum">1</span><span class="qn-steptitle">Bracket</span></div><div id="detBracket"></div></div>';
+  SCORE_ROUNDS.forEach(r=>{ if(store[r.coll][id]) html+='<div class="qn-card"><div class="qn-step"><span class="qn-stepnum g">2</span><span class="qn-steptitle">'+esc(r.label)+'</span></div><div id="detScore_'+r.key+'"></div></div>'; });
+  det.innerHTML=html;
+  if(p.bracket){ bracketPicks=p.bracket; renderBracket($("#detBracket"),true); }
+  SCORE_ROUNDS.forEach(r=>{ const data=store[r.coll][id]; if(!data) return; scorePicks=data.scores||{}; renderScoreForm($("#detScore_"+r.key),r,true); });
+  $("#backBtn").addEventListener("click",renderPeopleList); window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* =====================================================================
+   TABS + INIT
+   ===================================================================== */
+function switchTab(which){
+  const tabs={play:"#tabPlay",table:"#tabTable",people:"#tabPeople"},views={play:"#viewPlay",table:"#viewTable",people:"#viewPeople"};
+  Object.keys(tabs).forEach(k=>{ $(tabs[k]).setAttribute("aria-selected",k===which); $(views[k]).style.display=k===which?"block":"none"; });
+  if(which==="table") renderTable();
+  if(which==="people") renderPeopleList();
+  if(which==="play"&&currentUser) renderPlay();
+}
+$("#tabPlay").addEventListener("click",()=>switchTab("play"));
+$("#tabTable").addEventListener("click",()=>switchTab("table"));
+$("#tabPeople").addEventListener("click",()=>switchTab("people"));
+$("#loadBtn").addEventListener("click",loadUser);
+$("#playerName").addEventListener("keydown",e=>{ if(e.key==="Enter") loadUser(); });
+listenAll();
+</script>
+</body>
+</html>
