@@ -242,15 +242,15 @@ const db  = getFirestore(app);
 /* =====================================================================
    ⚙️  CONFIGURÁS VOS CUANDO TERMINEN LOS GRUPOS
    ===================================================================== */
-const ACTIVADO = false;   // → true cuando ya sepas las 32 clasificadas
+const ACTIVADO = true;   // → true cuando ya sepas las 32 clasificadas
 
 // Los 16 cruces de 16avos, en orden del bracket oficial (de arriba a abajo).
 // [local, visitante] con los códigos de TEAMS. (Esto es EJEMPLO; reemplazalo.)
 const R32 = [
-  ["MEX","SUI"], ["BRA","SCO"], ["USA","TUR"], ["GER","ECU"],
-  ["NED","JPN"], ["BEL","IRN"], ["ESP","URU"], ["FRA","SEN"],
-  ["ARG","AUT"], ["POR","COL"], ["ENG","CRO"], ["CAN","BIH"],
-  ["KOR","MAR"], ["AUS","PAR"], ["CIV","SWE"], ["NOR","EGY"]
+  ["GER","PAR"], ["FRA","SWE"], ["RSA","CAN"], ["NED","MAR"],
+  ["POR","CRO"], ["ESP","AUT"], ["USA","BIH"], ["BEL","SEN"],
+  ["BRA","JPN"], ["CIV","NOR"], ["MEX","ECU"], ["ENG","COD"],
+  ["ARG","CPV"], ["AUS","EGY"], ["SUI","ALG"], ["COL","GHA"]
 ];
 
 // (Opcional) hora UTC de inicio por partido: KICKOFF["r32_1"]="2026-06-29T19:00:00Z";
