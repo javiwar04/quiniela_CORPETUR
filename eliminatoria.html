@@ -194,7 +194,7 @@
     <div class="qn-banner" id="banner"></div>
     <div class="qn-card" id="nameCard">
       <label class="qn-label" for="playerName">Tu nombre</label>
-      <input class="qn-input" id="playerName" maxlength="30" placeholder="Ej. Juan" autocomplete="off">
+      <input class="qn-input" id="playerName" maxlength="30" placeholder="Ej. Javier" autocomplete="off">
       <button class="qn-btn" id="loadBtn" style="margin-top:12px;width:100%">Entrar</button>
       <p class="qn-hint">Usá el <strong>mismo nombre</strong> que en la quiniela de grupos. Primero sellás tu <strong>bracket</strong> (una sola vez) y luego los <strong>marcadores</strong> de cada ronda conforme se juegan.</p>
     </div>
@@ -315,7 +315,7 @@ const SCORE_ROUNDS = [
   { key:"final", label:"Final y 3.º lugar", coll:"el_final", ids:["tp_1","f_1"] }
 ];
 const SCORE_IDS = [...ROUND_IDS.r32,...ROUND_IDS.r16,...ROUND_IDS.qf,...ROUND_IDS.sf,"tp_1","f_1"];
-const RES_DOC = ["resultados","eliminatorias"];
+const RES_DOC = ["resultados","eliminatoria"];
 
 function parseRes(v){
   if(v==null) return null;
