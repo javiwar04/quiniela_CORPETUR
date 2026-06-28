@@ -253,8 +253,29 @@ const R32 = [
   ["ARG","CPV"], ["AUS","EGY"], ["SUI","ALG"], ["COL","GHA"]
 ];
 
-// (Opcional) hora UTC de inicio por partido: KICKOFF["r32_1"]="2026-06-29T19:00:00Z";
-const KICKOFF = {};
+// Hora UTC de inicio de cada partido. Si alguien sella DESPUÉS de que el
+// partido empezó, ese partido NO le cuenta (no se vale predecir el pasado).
+// Guatemala es UTC-6 → sumá 6h: 1:00 PM en Guate = 19:00 UTC ("...T19:00:00Z").
+// Descomentá y poné la hora real de cada 16avo. Los que dejés sin hora cuentan
+// por honor (sellá antes del partido).
+const KICKOFF = {
+  r32_3:"2026-06-28T19:00:00Z",   // Sudáfrica-Canadá  (1:00 PM Guate, hoy)
+  // r32_1:"2026-06-..T..:00:00Z", // Alemania-Paraguay
+  // r32_2:"2026-06-..T..:00:00Z", // Francia-Suecia
+  // r32_4:"2026-06-..T..:00:00Z", // Países Bajos-Marruecos
+  // r32_5:"2026-06-..T..:00:00Z", // Portugal-Croacia
+  // r32_6:"2026-06-..T..:00:00Z", // España-Austria
+  // r32_7:"2026-06-..T..:00:00Z", // EE.UU.-Bosnia
+  // r32_8:"2026-06-..T..:00:00Z", // Bélgica-Senegal
+  // r32_9:"2026-06-..T..:00:00Z", // Brasil-Japón
+  // r32_10:"2026-06-..T..:00:00Z",// C. de Marfil-Noruega
+  // r32_11:"2026-06-..T..:00:00Z",// México-Ecuador
+  // r32_12:"2026-06-..T..:00:00Z",// Inglaterra-RD Congo
+  // r32_13:"2026-06-..T..:00:00Z",// Argentina-Cabo Verde
+  // r32_14:"2026-06-..T..:00:00Z",// Australia-Egipto
+  // r32_15:"2026-06-..T..:00:00Z",// Suiza-Argelia
+  // r32_16:"2026-06-..T..:00:00Z",// Colombia-Ghana
+};
 /* ===================================================================== */
 
 const TEAMS = {
@@ -324,15 +345,15 @@ function deriveActual(seed, results){
   reach.campeon=advOf("f_1");
   return {matchups,advOf,reach};
 }
-function bracketPoints(bracket, reach){
+function bracketPoints(bracket, reach, sealMs){
   const z={total:0,octavos:0,cuartos:0,semis:0,final:0,campeon:0};
   if(!bracket) return z;
   let oc=0,cu=0,se=0,fi=0,ca=0;
-  ROUND_IDS.r32.forEach(id=>{if(bracket[id]&&reach.octavos.has(bracket[id]))oc++;});
-  ROUND_IDS.r16.forEach(id=>{if(bracket[id]&&reach.cuartos.has(bracket[id]))cu++;});
-  ROUND_IDS.qf .forEach(id=>{if(bracket[id]&&reach.semis.has(bracket[id]))se++;});
-  ROUND_IDS.sf .forEach(id=>{if(bracket[id]&&reach.final.has(bracket[id]))fi++;});
-  if(bracket.f_1&&reach.campeon&&bracket.f_1===reach.campeon)ca=1;
+  ROUND_IDS.r32.forEach(id=>{if(bracket[id]&&reach.octavos.has(bracket[id])&&countsFor(id,sealMs))oc++;});
+  ROUND_IDS.r16.forEach(id=>{if(bracket[id]&&reach.cuartos.has(bracket[id])&&countsFor(id,sealMs))cu++;});
+  ROUND_IDS.qf .forEach(id=>{if(bracket[id]&&reach.semis.has(bracket[id])&&countsFor(id,sealMs))se++;});
+  ROUND_IDS.sf .forEach(id=>{if(bracket[id]&&reach.final.has(bracket[id])&&countsFor(id,sealMs))fi++;});
+  if(bracket.f_1&&reach.campeon&&bracket.f_1===reach.campeon&&countsFor("f_1",sealMs))ca=1;
   return {total:oc*BRK_PTS.octavos+cu*BRK_PTS.cuartos+se*BRK_PTS.semis+fi*BRK_PTS.final+ca*BRK_PTS.campeon,
           octavos:oc,cuartos:cu,semis:se,final:fi,campeon:ca};
 }
@@ -503,7 +524,7 @@ function advName(mm,p){
   if(p.h>p.a) return mm.home; if(p.a>p.h) return mm.away;
   return p.adv==="home"?mm.home:p.adv==="away"?mm.away:null;
 }
-function renderScoreForm(host, round, readonly){
+function renderScoreForm(host, round, readonly, sealMs){
   if(!host) return;
   let html="";
   round.ids.forEach(id=>{
@@ -512,14 +533,18 @@ function renderScoreForm(host, round, readonly){
     const hc=mm.home,ac=mm.away,p=scorePicks[id]||{};
     const hv=(p.h!=null)?p.h:"", av=(p.a!=null)?p.a:"";
     const res=readonly?results[id]:null;
+    const lateSeal = sealMs && KICKOFF[id] && sealMs>=Date.parse(KICKOFF[id]);
     let hitCls="",tag="";
-    if(readonly&&res){ const s=scoreMatch(p,res); tag=s===5?"🎯 +5":s===3?"✓ +3":"✗ +0"; hitCls=s===5?" hit5":s===3?" hit3":" hit0"; }
+    if(readonly&&res&&!lateSeal){ const s=scoreMatch(p,res); tag=s===5?"🎯 +5":s===3?"✓ +3":"✗ +0"; hitCls=s===5?" hit5":s===3?" hit3":" hit0"; }
     const label=id==="tp_1"?"3.º lugar":id==="f_1"?"FINAL":"";
     const tie=(hv!==""&&av!==""&&Number(hv)===Number(av));
     const adv=advName(mm,p);
     let foot="";
     if(label) foot+='<span class="sc-label">'+label+'</span>';
-    if(readonly&&res){
+    if(readonly&&res&&lateSeal){
+      foot+='<span class="sc-adv">Real '+res.h+'–'+res.a+'</span>';
+      foot+='<span class="sc-tag" style="margin-left:auto;background:var(--surface-2);color:var(--ink-dim)">⚪ Selló tarde · no cuenta</span>';
+    }else if(readonly&&res){
       const realAdv=res.adv==="home"?hc:res.adv==="away"?ac:null;
       foot+='<span class="sc-adv">Real '+res.h+'–'+res.a+(res.h===res.a&&realAdv?' (pen '+esc(nameOf(realAdv))+')':'')+'</span>';
       foot+='<span class="sc-tag" style="margin-left:auto;background:'+(tag[0]==="🎯"?"var(--green-soft)":tag[0]==="✓"?"var(--gold-soft)":"var(--red-soft)")+'">'+tag+'</span>';
@@ -694,18 +719,27 @@ function listenAll(){
     },()=>{});
   });
 }
+const tsMs = d => (d&&d.ts&&d.ts.toDate) ? d.ts.toDate().getTime() : null;
 function gatherPlayer(id){
   const b=store.el_bracket[id];
   const scoresByRound={ r32:store.el_r32[id]?.scores||{}, r16:store.el_r16[id]?.scores||{},
     qf:store.el_qf[id]?.scores||{}, sf:store.el_sf[id]?.scores||{}, final:store.el_final[id]?.scores||{} };
+  const sealMs={ bracket:tsMs(b), r32:tsMs(store.el_r32[id]), r16:tsMs(store.el_r16[id]),
+    qf:tsMs(store.el_qf[id]), sf:tsMs(store.el_sf[id]), final:tsMs(store.el_final[id]) };
   const name=b?.name||store.el_r32[id]?.name||store.el_r16[id]?.name||store.el_qf[id]?.name||store.el_sf[id]?.name||store.el_final[id]?.name||id;
-  return {id,name,bracket:b?b.picks:null,scoresByRound,hasBracket:!!b};
+  return {id,name,bracket:b?b.picks:null,scoresByRound,sealMs,hasBracket:!!b};
 }
 function allPlayerIds(){ const s=new Set(); Object.values(store).forEach(c=>Object.keys(c).forEach(id=>s.add(id))); return [...s]; }
-function totalScorePoints(sbr){
+function roundOfId(id){ if(id.startsWith("r32"))return "r32"; if(id.startsWith("r16"))return "r16"; if(id.startsWith("qf"))return "qf"; if(id.startsWith("sf"))return "sf"; return "final"; }
+function totalScorePoints(sbr, sealMs){
   const all={...sbr.r32,...sbr.r16,...sbr.qf,...sbr.sf,...sbr.final};
   let pts=0,exactos=0,aciertos=0;
-  SCORE_IDS.forEach(id=>{const res=results[id];if(!res)return;const s=scoreMatch(all[id],res);pts+=s;if(s===5)exactos++;else if(s===3)aciertos++;});
+  SCORE_IDS.forEach(id=>{
+    const res=results[id]; if(!res) return;
+    const ms = sealMs ? sealMs[roundOfId(id)] : null;
+    if(!countsFor(id, ms)) return;            // selló después del inicio → no cuenta
+    const s=scoreMatch(all[id],res); pts+=s; if(s===5)exactos++; else if(s===3)aciertos++;
+  });
   return {pts,exactos,aciertos};
 }
 
@@ -715,7 +749,7 @@ function totalScorePoints(sbr){
 function renderTable(){
   const v=$("#viewTable"); const ids=allPlayerIds();
   if(ids.length===0){ v.innerHTML='<div class="qn-empty"><span class="big">🥅</span>Todavía nadie ha sellado nada.<br>Armá tu bracket en <strong>Mi quiniela</strong>.</div>'; return; }
-  const rows=ids.map(id=>{ const p=gatherPlayer(id); const bp=bracketPoints(p.bracket,derived.reach); const sp=totalScorePoints(p.scoresByRound);
+  const rows=ids.map(id=>{ const p=gatherPlayer(id); const bp=bracketPoints(p.bracket,derived.reach,p.sealMs.bracket); const sp=totalScorePoints(p.scoresByRound,p.sealMs);
     return {name:p.name,total:bp.total+sp.pts,brk:bp.total,sco:sp.pts,exactos:sp.exactos,champ:p.bracket?p.bracket.f_1:null}; });
   rows.sort((a,b)=>b.total-a.total||b.exactos-a.exactos||a.name.localeCompare(b.name));
   const anyRes=Object.keys(results).length>0;
@@ -748,7 +782,7 @@ function renderPeopleList(){
   list.querySelectorAll("[data-id]").forEach(b=>b.addEventListener("click",()=>showDetail(b.getAttribute("data-id"))));
 }
 function showDetail(id){
-  const p=gatherPlayer(id); const bp=bracketPoints(p.bracket,derived.reach); const sp=totalScorePoints(p.scoresByRound);
+  const p=gatherPlayer(id); const bp=bracketPoints(p.bracket,derived.reach,p.sealMs.bracket); const sp=totalScorePoints(p.scoresByRound,p.sealMs);
   $("#peopleList").style.display="none"; const det=$("#peopleDetail"); det.style.display="block";
   let html='<button class="qn-back" id="backBtn">← Participantes</button><h2 class="qn-vtitle">🔒 '+esc(p.name)+'</h2>'+
     '<p class="qn-vmeta">Total <strong style="color:var(--green-d)">'+(bp.total+sp.pts)+' pts</strong> · bracket '+bp.total+' · marcadores '+sp.pts+'</p>';
@@ -756,7 +790,7 @@ function showDetail(id){
   SCORE_ROUNDS.forEach(r=>{ if(store[r.coll][id]) html+='<div class="qn-card"><div class="qn-step"><span class="qn-stepnum g">2</span><span class="qn-steptitle">'+esc(r.label)+'</span></div><div id="detScore_'+r.key+'"></div></div>'; });
   det.innerHTML=html;
   if(p.bracket){ bracketPicks=p.bracket; renderBracket($("#detBracket"),true); }
-  SCORE_ROUNDS.forEach(r=>{ const data=store[r.coll][id]; if(!data) return; scorePicks=data.scores||{}; renderScoreForm($("#detScore_"+r.key),r,true); });
+  SCORE_ROUNDS.forEach(r=>{ const data=store[r.coll][id]; if(!data) return; scorePicks=data.scores||{}; renderScoreForm($("#detScore_"+r.key),r,true,p.sealMs[r.key]); });
   $("#backBtn").addEventListener("click",renderPeopleList); window.scrollTo({top:0,behavior:"smooth"});
 }
 
