@@ -106,6 +106,7 @@
   .bk-slot.miss{background:var(--red-soft);color:var(--red)}
   .bk-slot.miss .chk{opacity:1;color:var(--red)}
   .bk-slot.miss .chk::before{content:"✗"}
+  .bk-slot.pend{background:var(--surface-2);color:var(--ink-2);font-weight:800}
   .bk-slot.sel .chk::before,.bk-slot.win .chk::before{content:"✓"}
   /* champion card */
   .bk-champcard{width:100%;border:1.5px solid var(--gold);background:var(--gold-soft);border-radius:12px;padding:12px 10px;text-align:center}
@@ -343,7 +344,9 @@ function deriveActual(seed, results){
   ROUND_IDS.qf .forEach(id=>{const t=advOf(id);if(t)reach.semis.add(t);});
   ROUND_IDS.sf .forEach(id=>{const t=advOf(id);if(t)reach.final.add(t);});
   reach.campeon=advOf("f_1");
-  return {matchups,advOf,reach};
+  const eliminated=new Set();
+  Object.keys(matchups).forEach(id=>{const r=results[id],m=matchups[id];if(r&&r.adv&&m){const l=r.adv==="home"?m.away:m.home;if(l)eliminated.add(l);}});
+  return {matchups,advOf,reach,eliminated};
 }
 function bracketPoints(bracket, reach, sealMs){
   const z={total:0,octavos:0,cuartos:0,semis:0,final:0,campeon:0};
@@ -431,16 +434,18 @@ function teamReachedNextRound(mid, code){
   const round=mid.split("_")[0];
   const tgt=round==="r32"?derived.reach.octavos:round==="r16"?derived.reach.cuartos:
             round==="qf"?derived.reach.semis:round==="sf"?derived.reach.final:
-            round==="f"?(derived.reach.campeon?new Set([derived.reach.campeon]):null):null;
-  if(!tgt||tgt.size===0) return null;
-  return tgt.has(code);
+            round==="f"?(derived.reach.campeon?new Set([derived.reach.campeon]):new Set()):null;
+  if(!tgt) return null;
+  if(tgt.has(code)) return true;                  // confirmado: avanzó
+  if(derived.eliminated.has(code)) return false;  // confirmado: quedó fuera
+  return null;                                     // aún no se decide → sin color
 }
 
 function slotHTML(mid, code, readonly){
   const tbd=!code;
   const sel=!tbd&&bracketPicks[mid]===code;
   let cls="bk-slot"+(tbd?" tbd":"")+(sel?" sel":"");
-  if(readonly&&sel&&!tbd){ const w=teamReachedNextRound(mid,code); if(w===true)cls=cls.replace("sel","win"); else if(w===false)cls=cls.replace("sel","miss"); }
+  if(readonly&&sel&&!tbd){ const w=teamReachedNextRound(mid,code); cls = w===true?cls.replace("sel","win"):w===false?cls.replace("sel","miss"):cls.replace("sel","pend"); }
   return '<button class="'+cls+'" data-mid="'+mid+'" data-code="'+(code||"")+'"'+((readonly||tbd)?" disabled":"")+'>'+
     '<span class="flag">'+flagOf(code||"TBD")+'</span><span class="nm">'+esc(nameOf(code||"TBD"))+'</span><span class="chk"></span></button>';
 }
